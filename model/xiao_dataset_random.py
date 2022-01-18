@@ -51,10 +51,10 @@ def process2(datasetdata, length):  # [3,1024] list->tensor
 class FlameSet(data.Dataset):
     def __init__(self, exp, length, dimension, kind):
 
-        if exp not in ('gear_fault', 'insert_fault', 'L_fault'):
+        if exp not in ('gear_fault', 'insert_fault', 'L_fault', 'global'):
             print("wrong experiment name: '{}'".format(exp))
             exit(1)
-        if kind not in ('incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'try'):
+        if kind not in ('incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'try', 'global'):
             print("wrong rpm value: '{}'".format(kind))
             exit(1)
         self.length = length
@@ -64,31 +64,45 @@ class FlameSet(data.Dataset):
         self.traindata_id = []
         self.testdata_id = []
 
+
+
         if exp == 'gear_fault':
             rdir = 'data/gear_fault'
         elif exp == 'insert_fault':
             rdir = 'data/insert_fault'
+            kind_differ = 0
         elif exp == 'L_fault':
             rdir = 'data/L_fault'
+            kind_differ = 0
+        elif exp == 'global':
+            rdir = 'data'
+        else:
+            exit(1)
 
         if kind == 'incline':
             mydatalist = ['1_incline.csv', '5_normal.csv']
-            mylabellist = [0, 4]  # 现在这里应该是打标签吧？（xiao）
+            mylabellist = [0+kind_differ, 4+kind_differ]  # 现在这里应该是打标签吧？（xiao）
         elif kind == 'foreign_body':
             mydatalist = ['2_foreign_body.csv', '5_normal.csv']
-            mylabellist = [1, 4]
+            mylabellist = [1+kind_differ, 4+kind_differ]
         elif kind == 'no_base':
             mydatalist = ['3_no_base.csv', '5_normal.csv']
-            mylabellist = [2, 4]
+            mylabellist = [2+kind_differ, 4+kind_differ]
         elif kind == 'all_ready':
             mydatalist = ['4_all_ready.csv', '5_normal.csv']
-            mylabellist = [3, 4]
+            mylabellist = [3+kind_differ, 4+kind_differ]
         elif kind == 'classify':
             mydatalist = ['1_incline.csv', '2_foreign_body.csv', '3_no_base.csv', '4_all_ready.csv', '5_normal.csv']
-            mylabellist = [0, 1, 2, 3, 4]
+            mylabellist = [0+kind_differ, 1+kind_differ, 2+kind_differ, 3+kind_differ, 4+kind_differ]
         elif kind == 'try':
             mydatalist = ['1_incline.csv', '3_no_base.csv', '5_normal.csv']
-            mylabellist = [0, 2, 4]
+            mylabellist = [0+kind_differ, 2+kind_differ, 4+kind_differ]
+        elif kind == 'global':
+            mydatalist = ['L_fault/1_incline.csv', 'L_fault/2_foreign_body.csv', 'L_fault/3_no_base.csv',
+                          'L_fault/4_all_ready.csv', 'L_fault/5_normal.csv',
+                          'insert_fault/1_incline.csv', 'insert_fault/2_foreign_body.csv', 'insert_fault/3_no_base.csv',
+                          'insert_fault/4_all_ready.csv', 'insert_fault/5_normal.csv']
+            mylabellist = [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
         else:
             print("wrong rpm value: '{}'".format(kind))
             exit(1)

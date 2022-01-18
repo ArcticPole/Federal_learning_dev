@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun 28 09:25:00 2022
+Created on Fri Jun 14 09:25:00 2022
 
 @author: Xiao Peng
 """
@@ -13,6 +13,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt  # plt 用于显示图片
 import numpy as np
 import xiao_feature_enhance
+import torch
 
 weight = model_feature.weight()
 other_weight = model_feature_another.weight()
@@ -130,6 +131,8 @@ plt.figure()
 plt.plot(index, train_loss)
 plt.title("clip size=2304")
 plt.show()
+PATH = 'global_models/source_models/net_xiao_merge.pkl'   # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
+torch.save(net, PATH)
 
 total_correct = 0
 for x, y in trainloader:  # 训练误差

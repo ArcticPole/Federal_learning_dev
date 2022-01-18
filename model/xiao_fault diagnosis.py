@@ -21,13 +21,15 @@ import matplotlib.image as mpimg  # mpimg 用于读取图片
 from torchvision import transforms
 
 ## load the dataset
-import xiaodataset
+# import xiaodataset
 import xiao_dataset_random
 
 #cifar = dataset.FlameSet('gear_fault', 2304, '2D', 'incline')
-exp='insert_fault'
-kind=['incline', 'foreign_body', 'no_base', 'all_ready', 'classify']
-for ind in range(0,4):
+exp='L_fault'
+# exp='global'
+kind=['incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'global']
+for ind in [4]:
+    print(kind[ind])
     # cifar = xiaodataset.FlameSet('gear_fault', 2304, '2D', 'incline', ind)
     cifar = xiao_dataset_random.FlameSet(exp, 2304, '2D', kind[ind])
 
@@ -82,20 +84,26 @@ for ind in range(0,4):
             loss.backward()  # 计算倒数
             optimizer.step()  # w' = w - Ir*grad 模型参数更新
             optimizer.zero_grad()
-            # if batch_idx % 10 == 0:  # 训练过程，输出并记录损失值
-            #     print(epoch, batch_idx, loss.item())
+            if batch_idx % 10 == 0:  # 训练过程，输出并记录损失值
+                print(epoch, batch_idx, loss.item())
             # print(index)
             train_loss.append(loss.item())  # loss仍然有一个图形副本。在这种情况中，可用.item()来释放它.(提高训练速度技巧)
+        # if loss.item() < 0.00001:
+        #     print("break at epoch ", epoch)
+        #     break
+        # if epoch == 199:
+        #     print("it need more than 200 epoch to best fit this situation")
+
 
     index = np.linspace(1, len(train_loss), len(train_loss))  # 训练结束，绘制损失值变化图
     plt.figure()
     plt.plot(index, train_loss)
     plt.title("model vote with batch size=10 with dimension index=%d" % ind)
-    plt.show()
+    # plt.show()
     plt.savefig("lossfig/dimension index%d.jpg" % ind)
     # print('net_xiao%d.pkl have done' % index)
     print(ind)
-    PATH = 'trained_model/net_xiao_%s_%s.pkl' % (exp, kind[ind])  # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
+    PATH = 'global_models/source_models/net_xiao_%s_%s.pkl' % (exp, kind[ind])  # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
     torch.save(net, PATH)
 
     total_correct = 0
@@ -137,12 +145,12 @@ for ind in range(0,4):
     # net = torch.load(PATH)     # 加载训练过的模型
 
     # net.eval()
-net0=torch.load('trained_model/net_xiao0.pkl')
-net1=torch.load('trained_model/net_xiao1.pkl')
-net2=torch.load('trained_model/net_xiao2.pkl')
-net3=torch.load('trained_model/net_xiao3.pkl')
-net4=torch.load('trained_model/net_xiao4.pkl')
-net5=torch.load('trained_model/net_xiao5.pkl')
-
-import xiao_estimate
-xiao_estimate.model_vote()
+# net0=torch.load('trained_model/net_xiao0.pkl')
+# net1=torch.load('trained_model/net_xiao1.pkl')
+# net2=torch.load('trained_model/net_xiao2.pkl')
+# net3=torch.load('trained_model/net_xiao3.pkl')
+# net4=torch.load('trained_model/net_xiao4.pkl')
+# net5=torch.load('trained_model/net_xiao5.pkl')
+#
+# import xiao_estimate
+# xiao_estimate.model_vote()
