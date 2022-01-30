@@ -10,8 +10,8 @@ import torch.nn as nn
 
 def catch_feature(netlist,n):
     weight_list=[]
-    for i in range(n):
-        net = torch.load(netlist[i])
+    for k in range(n):
+        net = torch.load(netlist[k])
         conv_layers = []
         model_weights = []
         model_children = list(net.children())

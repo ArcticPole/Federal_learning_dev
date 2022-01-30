@@ -242,4 +242,150 @@ import torchvision.models
 model = torchvision.models.alexnet()
 tw.draw_model(model, [1, 3, 224, 224])
 '''
+import xiao_global_feature
+import xiao_feature_enhance
 
+
+
+class cnn2d_xiao_global(nn.Module):
+
+    def __init__(self):
+        super(cnn2d_xiao_global, self).__init__()
+
+        net_list = ['global_models/source_models/net_xiao_L_fault_classify.pkl',
+                    'global_models/source_models/net_xiao_insert_fault_classify.pkl']
+
+        nl = len(net_list)
+
+        all_weights = xiao_global_feature.catch_feature(net_list, nl)
+
+        for i in range(nl):
+            all_weights[i] = xiao_feature_enhance.f_e(all_weights[i])
+
+        weight = all_weights[0]
+
+        for i in range(1, nl):
+            for j in range(len(weight)):
+                weight[j].data += all_weights[i][j]
+        for i in range(len(weight)):
+            weight[i].data /= pow(nl, 2)
+
+        self.weight1 = weight[0]
+        self.weight2 = weight[1]
+        self.weight3 = weight[2]
+        self.weight4 = weight[3]
+
+        self.features = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(2304, 288),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool2d(2, stride=2),
+            nn.Linear(288, 72),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool2d(2, stride=2),
+            nn. Linear(72, 10),
+            nn.LogSoftmax(dim=1)
+        )
+
+    def forward(self, x):
+        # print(x.shape)
+        x = F.conv2d(x, self.weight1, bias=None, stride=1, padding=2, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight2, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight3, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight4, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        # print(x.shape)
+        x = x.view(x.size(0), -1)
+        # print(x.shape)
+        x = self.classifier(x)
+        # print(x.shape)
+        return x
+
+
+class cnn2d_xiao_individual(nn.Module):
+
+    def __init__(self):
+        super(cnn2d_xiao_individual, self).__init__()
+
+        presentage,pre = wt.data_identification()
+        net_list = ['global_models/source_models/net_xiao_L_fault_classify.pkl',
+                    'global_models/source_models/net_xiao_insert_fault_classify.pkl']
+        # presentage = [pre[0],
+        #               pre[1]]
+        nl = len(net_list)
+        all_weights = xiao_global_feature.catch_feature(net_list, nl)
+        for i in range(len(pre)):
+            if pre[i] > 0.1:
+                print(pre[i])
+                # all_weights[i] = xiao_feature_enhance.f_e(all_weights[i])
+                for j in range(len(all_weights[i])):
+                    all_weights[i][j].data *= pre[i]
+            # else:
+                # for j in range(len(all_weights[i])):
+                #     all_weights[i][j].data *= 0
+
+        weight = all_weights[0]
+
+        for i in range(1, nl):
+            for j in range(len(weight)):
+                weight[j].data += all_weights[i][j]
+        for i in range(len(weight)):
+            weight[i].data /= pow(nl, 2)
+        print(weight[0])
+
+        self.weight1 = weight[0]
+        self.weight2 = weight[1]
+        self.weight3 = weight[2]
+        self.weight4 = weight[3]
+
+
+        # self.weight1 = nn.Parameter(data=weight[0], requires_grad=False)
+        # self.weight2 = nn.Parameter(data=weight[1], requires_grad=False)
+        # self.weight3 = nn.Parameter(data=weight[2], requires_grad=False)
+        # self.weight4 = nn.Parameter(data=weight[3], requires_grad=False)
+        self.features = nn.Sequential(
+            #nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(2304, 288),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool2d(2, stride=2),
+            nn.Linear(288, 72),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool2d(2, stride=2),
+            nn. Linear(72, 10),
+            nn.LogSoftmax(dim=1)
+        )
+
+    def forward(self, x):
+        # print(x.shape)
+        x = F.conv2d(x, self.weight1, bias=None, stride=1, padding=2, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight2, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight3, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
+        # print(x.shape)
+        x = F.conv2d(x, self.weight4, bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
+        # print(x.shape)
+        x = x.view(x.size(0), -1)
+        # print(x.shape)
+        x = self.classifier(x)
+        # print(x.shape)
+        return x

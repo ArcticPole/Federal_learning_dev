@@ -25,10 +25,11 @@ from torchvision import transforms
 import xiao_dataset_random
 
 #cifar = dataset.FlameSet('gear_fault', 2304, '2D', 'incline')
-exp='L_fault'
+# exp='insert_fault'
 # exp='global'
-kind=['incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'global']
-for ind in [4]:
+exp = 'normal'
+kind = ['incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'global', 'normal']
+for ind in [6]:
     print(kind[ind])
     # cifar = xiaodataset.FlameSet('gear_fault', 2304, '2D', 'incline', ind)
     cifar = xiao_dataset_random.FlameSet(exp, 2304, '2D', kind[ind])
@@ -88,7 +89,7 @@ for ind in [4]:
                 print(epoch, batch_idx, loss.item())
             # print(index)
             train_loss.append(loss.item())  # loss仍然有一个图形副本。在这种情况中，可用.item()来释放它.(提高训练速度技巧)
-        # if loss.item() < 0.00001:
+        # if loss.item() < 0.0001:
         #     print("break at epoch ", epoch)
         #     break
         # if epoch == 199:
@@ -103,7 +104,7 @@ for ind in [4]:
     plt.savefig("lossfig/dimension index%d.jpg" % ind)
     # print('net_xiao%d.pkl have done' % index)
     print(ind)
-    PATH = 'global_models/source_models/net_xiao_%s_%s.pkl' % (exp, kind[ind])  # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
+    PATH = 'global_models/source_models/net_xiao_%s_%s.pkl' % (exp, kind[ind])
     torch.save(net, PATH)
 
     total_correct = 0

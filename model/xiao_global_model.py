@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun 28 09:25:00 2022
+Created on Fri Jun 18 09:25:00 2022
 
 @author: Xiao Peng
 """
@@ -51,9 +51,10 @@ for i in range(len(weight)):
 # for i in range(0,len(weight)):  # merge two kernel
 #     weight[i].data+=other_weight[i]
 print(weight[0][0][0])
-class cnn2d_xiao_merge(nn.Module):
+class cnn2d_xiao_global(nn.Module):
+
     def __init__(self):
-        super().__init__()
+        super(cnn2d_xiao_global, self).__init__()
         # self.weight1 = nn.parameter(weight[1])
         # self.weight2 = nn.parameter(weight[2])
         # self.weight3 = nn.parameter(weight[3])
@@ -96,7 +97,6 @@ class cnn2d_xiao_merge(nn.Module):
         return x
 
 
-
 ##########################################checking########################################################
 import xiao_dataset_random as xdr
 
@@ -123,7 +123,7 @@ validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler
 
 
 
-net = cnn2d_xiao_merge()     # 加载训练过的模型
+net = cnn2d_xiao_global()     # 加载训练过的模型
 
 import torch.optim as optim
 
@@ -160,7 +160,7 @@ index = np.linspace(1, len(train_loss), len(train_loss))  # 训练结束，绘�
 plt.figure()
 plt.plot(index, train_loss)
 plt.show()
-PATH = 'global_models/source_models/net_xiao_global.pkl'   # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
+PATH = 'global_models/source_models/net_xiao_global5.pkl'   # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
 torch.save(net, PATH)
 
 total_correct = 0

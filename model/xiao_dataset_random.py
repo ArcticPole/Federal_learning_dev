@@ -51,10 +51,10 @@ def process2(datasetdata, length):  # [3,1024] list->tensor
 class FlameSet(data.Dataset):
     def __init__(self, exp, length, dimension, kind):
 
-        if exp not in ('gear_fault', 'insert_fault', 'L_fault', 'global'):
+        if exp not in ('gear_fault', 'insert_fault', 'L_fault', 'global', 'normal', 'gear_all'):
             print("wrong experiment name: '{}'".format(exp))
             exit(1)
-        if kind not in ('incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'try', 'global'):
+        if kind not in ('incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'try', 'global', 'normal'):
             print("wrong rpm value: '{}'".format(kind))
             exit(1)
         self.length = length
@@ -75,6 +75,8 @@ class FlameSet(data.Dataset):
             rdir = 'data/L_fault'
             kind_differ = 0
         elif exp == 'global':
+            rdir = 'data'
+        elif exp == 'normal':
             rdir = 'data'
         else:
             exit(1)
@@ -103,6 +105,13 @@ class FlameSet(data.Dataset):
                           'insert_fault/1_incline.csv', 'insert_fault/2_foreign_body.csv', 'insert_fault/3_no_base.csv',
                           'insert_fault/4_all_ready.csv', 'insert_fault/5_normal.csv']
             mylabellist = [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
+            # mylabellist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        elif kind == 'normal':
+            mydatalist = ['L_fault/5_normal.csv', 'insert_fault/5_normal.csv']
+            mylabellist = [4, 9]
+        elif kind == 'gear_all':
+            mydatalist = ['1_incline.csv', '2_foreign_body.csv', '3_no_base.csv', '5_normal.csv']
+            mylabellist = [0, 1, 2, 4]
         else:
             print("wrong rpm value: '{}'".format(kind))
             exit(1)
