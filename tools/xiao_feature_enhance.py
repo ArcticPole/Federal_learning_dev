@@ -10,14 +10,7 @@ import torch.nn as nn
 import torch
 def f_e(weight):
 
-    # print(weight[0][0][0])
-    # print(weight[0][0][0][0][0].data)
-    # weight[0][0][0][0][0].data*=0
-    # print(weight[0][0][0][0][0])
-    # print(np.char.decode(np.char.encode(weight[0].detach().numpy())))
-    # print(nn.Parameter(torch.FloatTensor(np.char.decode(np.char.encode(weight[0].detach().numpy()))), requires_grad=True))
     for i in range(0, len(weight)):  # len=4
-        # print(weight[i].shape)
         for j in range(0, len(weight[i])):  # i=0,len=32
             for k in range(0, len(weight[i][j])):  # i=0,j=0,len=1
                 weight_max = max(max((weight[i][j][k]).detach().numpy().tolist()))
@@ -26,7 +19,6 @@ def f_e(weight):
                 weight_med = weight_min + ran * 0.5
                 critical_max = weight_med + ran * 0.4
                 critical_min = weight_med - ran * 0.4
-                # print(weight_med)
                 for l in range(0, len(weight[i][j][k])):  # i=0,j=0,l=0,len=5
                     for m in range(0, len(weight[i][j][k][l])):
                         # print(weight[i][j][k][l][m])
@@ -37,5 +29,4 @@ def f_e(weight):
                             weight[i][j][k][l][m].data += 1
                             weight[i][j][k][l][m].data *= weight_med
     print("feature enhanced")
-    # print(weight[0][0][0])
     return weight

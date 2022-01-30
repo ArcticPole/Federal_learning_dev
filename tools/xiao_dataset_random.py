@@ -17,7 +17,7 @@ import pandas as pd
 import os
 
 def getRandomIndex(n, x, d):
-    # 索引范围为[0, n), 随机选x个不重复
+    # The index range is [0, n], and X are randomly selected without repetition
     index = random.sample(range(d,d+n), x)
     return index
 
@@ -47,7 +47,6 @@ def process2(datasetdata, length):  # [3,1024] list->tensor
     return traindata
 
 
-# 定义自己的数据集合
 class FlameSet(data.Dataset):
     def __init__(self, exp, length, dimension, kind):
 
@@ -59,7 +58,7 @@ class FlameSet(data.Dataset):
             exit(1)
         self.length = length
         self.data_id = 0
-        self.dataset = np.zeros((0, self.length))  # xiao: 创建了一个空的array
+        self.dataset = np.zeros((0, self.length))  # xiao: create a empty array
         self.label = []
         self.traindata_id = []
         self.testdata_id = []
@@ -83,7 +82,7 @@ class FlameSet(data.Dataset):
 
         if kind == 'incline':
             mydatalist = ['1_incline.csv', '5_normal.csv']
-            mylabellist = [0+kind_differ, 4+kind_differ]  # 现在这里应该是打标签吧？（xiao）
+            mylabellist = [0+kind_differ, 4+kind_differ]
         elif kind == 'foreign_body':
             mydatalist = ['2_foreign_body.csv', '5_normal.csv']
             mylabellist = [1+kind_differ, 4+kind_differ]
@@ -117,25 +116,20 @@ class FlameSet(data.Dataset):
             exit(1)
 
 
-        for idx in range(len(mydatalist)):  # 遍历故障形式
-            csvdata_path = os.path.join(rdir, mydatalist[idx])  # csv 文件路径
-            csv_value = pd.read_csv(csvdata_path).values  # 导入csv数据
-            # print(csv_value.shape)
-            idx_last = -(csv_value.shape[0]*12 % self.length)//12  # xiao: 根据定义的长度，将数据切割成段
-            # print(csv_value[:idx_last].shape)
-            clips = csv_value[:idx_last].reshape(-1, self.length)  # xiao：切片
-            # print(clips.shape)  # xiao: 切片的shape 经改进后切入了尽可能多的数据
+        for idx in range(len(mydatalist)):  # iterate fault
+            csvdata_path = os.path.join(rdir, mydatalist[idx])  # csv file path
+            csv_value = pd.read_csv(csvdata_path).values  # load csv data
+            idx_last = -(csv_value.shape[0]*12 % self.length)//12
+            # xiao: Cut the data into segments according to the defined length
+            clips = csv_value[:idx_last].reshape(-1, self.length)
+            # xiao: The sliced shape has been improved to cut in as much data as possible
             n = clips.shape[0]
-            # print(idx)  # xiao：故障类型的index
-            # n_split = 4 * n // 5
-            self.dataset = np.vstack((self.dataset, clips))  # xiao: 把切片导入到数据 vstack是垂直组合两个array
-            self.label += [mylabellist[idx]] * n  # xiao:在这才是打标签吧
+            self.dataset = np.vstack((self.dataset, clips))
+            # xiao: Importing slices into data vstack is a vertical combination of two arrays
+            self.label += [mylabellist[idx]] * n  # xiao: now is adding label
 
             train_index = getRandomIndex(n, n*4//5,self.data_id)
-            # 再讲test_index从总的index中减去就得到了train_index
             test_index = list(set(list(range(self.data_id,n+self.data_id)))-set(train_index))
-            #print(train_index)
-            #print(test_index)
             self.traindata_id += train_index
             self.testdata_id += test_index
             self.data_id += n
@@ -152,11 +146,12 @@ class FlameSet(data.Dataset):
         return self.traindata_id, self.testdata_id
 
     def __getitem__(self, index):
-        pil_img = self.dataset[index]  # 根据索引，读取一个3X32X32的列表
+        pil_img = self.dataset[index]  # Read a list of 3x32x32 according to the index
         # print(np.array(pil_img).shape)
         data = self.transforms(pil_img, self.length)
-        data = data.unsqueeze(0)  # 输入数据为1通道时，在第一维度进行升维，确保训练数据x具有3个维度
-        # print(data.shape)
+        data = data.unsqueeze(0)
+        # When the input data is 1 channel,
+        # upgrade the dimension in the first dimension to ensure that the training data X has 3 dimensions
         label = self.label[index]
 
         return data, label
@@ -171,69 +166,16 @@ def loaddata(cifar):
     from torch.utils.data import DataLoader
     from torch.utils.data.sampler import SubsetRandomSampler
 
-    ## create training and validation sampler objects
+    # create training and validation sampler objects
     tr_sampler = SubsetRandomSampler(traindata_id)
     val_sampler = SubsetRandomSampler(testdata_id)
-    ## create iterator objects for train and valid datasets
+    # create iterator objects for train and valid datasets
     trainloader = DataLoader(cifar, batch_size=50, sampler=tr_sampler,
-                             shuffle=False)  # dataset就是Torch的Dataset格式的对象；batch_size即每批训练的样本数量，默认为；
+                             shuffle=False)
+    # Dataset is an object in the dataset format of torch; batch_ Size is the number of samples in each batch of training
     validloader = DataLoader(cifar, batch_size=50, sampler=val_sampler,
-                             shuffle=False)  # shuffle表示是否需要随机取样本；num_workers表示读取样本的线程数。
-    return trainloader, validloader  # xiao：此刻返回的即是数据批，在故障检测之中会用到
+                             shuffle=False)
+    # Shuffle indicates whether it is necessary to take samples at random; num_ Workers indicates the number of threads reading samples。
+    return trainloader, validloader
+    # xiao：At this moment, the data batch is returned, which will be used in fault detection
 
-
-
-# import matplotlib.pyplot as plt
-# cifar = FlameSet('gear_fault', 5184, '2D', 'incline')
-# target = 0
-# data = []
-# label = []
-# plt.figure(figsize=(20, 5*10))
-# for i in range(len(cifar)):
-#     x, y = cifar[i]
-#     if y == target:
-#         data.append(x)
-#         label.append(y)
-#         target += 1
-#         ax = plt.subplot(10, 1, target)
-#         ax.set_title("condation '{}'".format(y))
-#         ax.plot(x[0].numpy())
-#     i += 102
-
-# plt.show()
-
-
-'''
-import matplotlib.pyplot as plt
-cifar = FlameSet('48DriveEndFault','1772',4096,'2D', 'net_classifier')
-target = 0
-data=[]
-label=[]
-for i in range(len(cifar)):
-    x,y = cifar[i]
-    if y==target:
-        data.append(x)
-        label.append(y)
-        target += 1
-        plt.figure(figsize=(5,5))
-        ax = plt.subplot(1,1,1)
-        ax.set_title("condation '{}'".format(y))
-        ax.imshow(x[0])
-    i +=102
-
-plt.show()
-'''
-
-# print (x)
-# x = np.transpose(x.numpy(), (1, 2, 0))
-# print (x.shape)
-# idx = 1600
-# plt.figure()        # 二维数据的可视化
-
-# idx = 6000
-# for i in range(3):
-#    x,y = cifar[idx+i]
-#    ax = plt.subplot(1, 3, i+1)
-#    ax.imshow(x[0])
-#    print(cifar[idx+i])
-# plt.show()

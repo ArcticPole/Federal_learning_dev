@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt  # plt 用于显示图片
 import numpy as np
 import tools.xiao_feature_enhance as xiao_feature_enhance
 import tools.xiao_global_feature as xiao_global_feature
-import William_model_test as wt
+import third_stage.William_model_test as wt
 
 # presentage = wt.data_identification()
 # presentage.pop(4)
@@ -52,13 +52,14 @@ import William_model_test as wt
 # for i in range(len(weight)):
 #     weight[i].data /= pow(nl, 2)
 
+
 class cnn2d_xiao_individual(nn.Module):
 
     def __init__(self):
         super(cnn2d_xiao_individual, self).__init__()
-        presentage,pre = wt.data_identification()
-        net_list = ['../global_models/source_models/net_xiao_L_fault_classify.pkl',
-                    '../global_models/source_models/net_xiao_insert_fault_classify.pkl']
+        presentage, pre = wt.data_identification()
+        net_list = ["../global_models/source_models/net_xiao_L_fault_classify.pkl",
+                    "../global_models/source_models/net_xiao_insert_fault_classify.pkl"]
         print(pre)
         nl = len(net_list)
         all_weights = xiao_global_feature.catch_feature(net_list, nl)
@@ -117,11 +118,10 @@ class cnn2d_xiao_individual(nn.Module):
         return x
 
 
-
 ##########################################checking########################################################
 # import xiao_dataset_random as xdr
 # cifar = xdr.FlameSet('global', 2304, '2D', 'global')
-import William_dataset_random as wdr
+import third_stage.William_dataset_random as wdr
 cifar = wdr.FlameSet_test('all', 2304, '2D', 'classify')
 traindata_id, testdata_id = cifar._shuffle()  # xiao：Randomly generate training data set and test data set
 
@@ -145,8 +145,8 @@ validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler
 # Shuffle indicates whether it is necessary to take samples at random;
 # num_ Workers indicates the number of threads reading samples.
 
-
-net = cnn2d_xiao_individual()
+import tools.model as model
+net = model.cnn2d_xiao_individual()
 
 from torch import optim
 
@@ -184,10 +184,10 @@ index = np.linspace(1, len(train_loss), len(train_loss))  # After the training, 
 plt.figure()
 plt.plot(index, train_loss)
 plt.show()
-PATH = 'global_models/net_xiao_global_indi.pkl'
+PATH = '../global_models/net_xiao_global_indi.pkl'
 torch.save(net, PATH)
 weight = [net.weight1, net.weight2, net.weight3, net.weight4]
-PATH2 = 'global_models/net_xiao_global_indi_state.pkl'
+PATH2 = '../global_models/net_xiao_global_indi_state.pkl'
 state = {'model': net.state_dict(), 'optimizer': optimizer.state_dict(), 'epoch': epoch, 'weight': weight}
 torch.save(state, PATH2)
 

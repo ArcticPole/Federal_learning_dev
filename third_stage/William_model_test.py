@@ -8,12 +8,12 @@ Modified on Mon Jan 22 20:04:21 2022
 """
 
 import torch
-import William_dataset_random as wdr
+import third_stage.William_dataset_random as wdr
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 # import sys
-# sys.path.append("C:\\Users\\86184\\PycharmProjects\\Federal_learning 2.0")
-# from model import CNN2d_classifier_xiao
+# sys.path.append("C:/Users/86184/PycharmProjects/Federal_learning 2.0")
+from tools.model import CNN2d_classifier_xiao
 
 
 def data_identification():
@@ -21,17 +21,17 @@ def data_identification():
     traindata_id, testdata_id = cifar._shuffle()  # xiao：Randomly generate training data set and test data set
 
     val_sampler = SubsetRandomSampler(testdata_id)
-    valid_batch_size=1
+    valid_batch_size = 1
     validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler,
                           shuffle=False)
 
-    PATH = '../global_models/source_models/net_xiao_normal_normal.pkl'
+    PATH = "../global_models/source_models/net_xiao_normal_normal.pkl"
     net = torch.load(PATH)
 
     times = 1
     total_correct = 0
     net.eval()
-    proposal = [0,0]
+    proposal = [0, 0]
     for x, y in validloader:  # test error
         out = net(x)
         pred = out.argmax(dim=1)

@@ -17,7 +17,7 @@ import pandas as pd
 import os
 
 def getRandomIndex(n, x, d):
-    # 索引范围为[0, n), 随机选x个不重复
+    # The index range is [0, n), and X are randomly selected without repetition
     index = random.sample(range(d,d+n), x)
     return index
 
@@ -58,7 +58,7 @@ class FlameSet_test(data.Dataset):
             exit(1)
         self.length = length
         self.data_id = 0
-        self.dataset = np.zeros((0, self.length))  # xiao: 创建了一个空的array
+        self.dataset = np.zeros((0, self.length))  # xiao: create a empty array
         self.label = []
         self.traindata_id = []
         self.testdata_id = []
@@ -75,7 +75,7 @@ class FlameSet_test(data.Dataset):
         if exp != 'all':
             if kind == 'incline':
                 mydatalist = ['1_incline.csv']
-                mylabellist = [0]  # 现在这里应该是打标签吧？（xiao）
+                mylabellist = [0]
             elif kind == 'foreign_body':
                 mydatalist = ['2_foreign_body.csv']
                 mylabellist = [1]
@@ -101,31 +101,21 @@ class FlameSet_test(data.Dataset):
                 rows = 2000
                 if mydatalist[idx] == '5_normal.csv' :
                     rows = 20000
-                csvdata_path = os.path.join(rdir, mydatalist[idx])  # csv 文件路径
-                csv_value = pd.read_csv(csvdata_path,nrows=rows).values  # 导入csv数据
-                # print(csv_value.shape)
-                idx_last = -(csv_value.shape[0]*12 % self.length)//12  # xiao: 根据定义的长度，将数据切割成段
-                # print(csv_value[:idx_last].shape)
-                clips = csv_value[:idx_last].reshape(-1, self.length)  # xiao：切片
-                # print(clips.shape)  # xiao: 切片的shape 经改进后切入了尽可能多的数据
+                csvdata_path = os.path.join(rdir, mydatalist[idx])  # csv file path
+                csv_value = pd.read_csv(csvdata_path,nrows=rows).values  # load csv data
+                idx_last = -(csv_value.shape[0]*12 % self.length)//12
+                # xiao: Cut the data into segments according to the defined length
+                clips = csv_value[:idx_last].reshape(-1, self.length)
+                # xiao: The sliced shape has been improved to cut in as much data as possible
                 n = clips.shape[0]
-                # print(idx)  # xiao：故障类型的index
-                # n_split = 4 * n // 5
-                self.dataset = np.vstack((self.dataset, clips))  # xiao: 把切片导入到数据 vstack是垂直组合两个array
-                self.label += [mylabellist[idx]] * n  # xiao:在这才是打标签吧
+                self.dataset = np.vstack((self.dataset, clips))
+                # xiao: Importing slices into data vstack is a vertical combination of two arrays
+                self.label += [mylabellist[idx]] * n  # xiao: now is add label
                 test_index = getRandomIndex(n, n//2,self.data_id)
-
-                
-                #print(train_index)
-                #print(test_index)
                 self.testdata_id += test_index
                 self.data_id += n
 
         else:
-            '''
-            mylabellist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-            mydatalist = ['1_incline.csv', '2_foreign_body.csv', '3_no_base.csv', '4_all_ready.csv', '5_normal.csv']
-            '''
             if kind == 'gear_normal':
                 mydatalist = ['5_normal.csv']
                 mylabellist = [4, 9]

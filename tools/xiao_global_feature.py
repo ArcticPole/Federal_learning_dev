@@ -18,7 +18,6 @@ def catch_feature(netlist,n):
         counter = 0
 
         for i in range(len(model_children)):
-            #print(i)
             if type(model_children[i]) == nn.Conv2d:
                 counter += 1
                 model_weights.append(model_children[i].weight)

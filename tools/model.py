@@ -26,16 +26,16 @@ import torch.nn.functional as F
 class CNN2d_classifier_xiao(nn.Module): # nn.module 相当于是pytorch的基本单元，是操作的对象。
     
     def __init__(self):
-         super(CNN2d_classifier_xiao, self).__init__()
-         self.conv1 = nn.Conv2d(1, 32, 5, padding=2)      # x*32
-         self.conv2 = nn.Conv2d(32, 64, 3, padding=1)     # x*2
-         self.conv3 = nn.Conv2d(64, 128, 3, padding=1)    # x*2
-         self.conv4 = nn.Conv2d(128, 256, 3, padding=1)   # x*2
-         self.pool = nn.MaxPool2d(2, stride=2)            # x/(2*2)
-         self.linear1 = nn.Linear(2304, 288)  # xiao：应该是把
-         self.linear2 = nn.Linear(288, 72)
-         self.linear3 = nn.Linear(72, 10)
-         self.softmax = nn.LogSoftmax(dim=1)
+        super(CNN2d_classifier_xiao, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 5, padding=2)      # x*32
+        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)     # x*2
+        self.conv3 = nn.Conv2d(64, 128, 3, padding=1)    # x*2
+        self.conv4 = nn.Conv2d(128, 256, 3, padding=1)   # x*2
+        self.pool = nn.MaxPool2d(2, stride=2)            # x/(2*2)
+        self.linear1 = nn.Linear(2304, 288)  # xiao：应该是把
+        self.linear2 = nn.Linear(288, 72)
+        self.linear3 = nn.Linear(72, 10)
+        self.softmax = nn.LogSoftmax(dim=1)
          
     def forward(self, x):
         # print (x.shape)  # torch.Size([50, 1, 72, 72])
@@ -242,9 +242,9 @@ import torchvision.models
 model = torchvision.models.alexnet()
 tw.draw_model(model, [1, 3, 224, 224])
 '''
-import xiao_global_feature
-import xiao_feature_enhance
-import third_stage.willian_model_test as wt
+import tools.xiao_global_feature as xiao_global_feature
+import tools.xiao_feature_enhance as xiao_feature_enhance
+import third_stage.William_model_test as wt
 
 
 class cnn2d_xiao_global(nn.Module):
@@ -310,7 +310,6 @@ class cnn2d_xiao_individual(nn.Module):
 
     def __init__(self):
         super(cnn2d_xiao_individual, self).__init__()
-
         presentage,pre = wt.data_identification()
         net_list = ['../global_models/source_models/net_xiao_L_fault_classify.pkl',
                     '../global_models/source_models/net_xiao_insert_fault_classify.pkl']

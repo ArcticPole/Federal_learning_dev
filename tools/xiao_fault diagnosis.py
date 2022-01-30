@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt  # plt 用于显示图片
 import xiao_dataset_random
 
 #cifar = dataset.FlameSet('gear_fault', 2304, '2D', 'incline')
-exp='L_fault'
+exp='insert_fault'
 # exp='global'
 # exp = 'normal'
 kind = ['incline', 'foreign_body', 'no_base', 'all_ready', 'classify', 'global', 'normal']
@@ -50,7 +50,7 @@ for ind in [4]:
     # Define model
     from torch import nn
 
-    import model
+    import tools.model as model
 
     net = model.CNN2d_classifier_xiao()  # 选择神经网络模型
 
@@ -75,9 +75,9 @@ for ind in [4]:
                 print(epoch, batch_idx, loss.item())
             # print(index)
             train_loss.append(loss.item())  # loss仍然有一个图形副本。在这种情况中，可用.item()来释放它.(提高训练速度技巧)
-        # if loss.item() < 0.0001:
-        #     print("break at epoch ", epoch)
-        #     break
+        if loss.item() < 0.0001:
+            print("break at epoch ", epoch)
+            break
         # if epoch == 199:
         #     print("it need more than 200 epoch to best fit this situation")
 
