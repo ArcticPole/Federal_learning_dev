@@ -3,34 +3,29 @@
 Created on Fri Jun 14 09:25:00 2022
 
 @author: Xiao Peng
+@editor: Lin Ze
 """
 
-import model_feature  # model get from this machine
-import model_feature_another
-# import mqtt  # Convolution kernel from other machine
 from torch import nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt  # plt 用于显示图片
+import matplotlib.pyplot as plt 
 import numpy as np
-import xiao_feature_enhance
+import tools.xiao_feature_enhance as xiao_feature_enhance
 import torch
-
-weight = model_feature.weight()
-other_weight = model_feature_another.weight()
-
-weight=xiao_feature_enhance.f_e(weight)
-other_weight=xiao_feature_enhance.f_e(other_weight)
-
-for i in range(0,len(weight)):  # merge two kernel
-    weight[i].data+=other_weight[i]
+from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
+import tools.xiao_dataset_random as xdr
+import torch.optim as optim
+import first_stage.model_feature as mf
+import first_stage.model_feature_another as mfa
 
 class cnn2d_xiao_merge(nn.Module):
-    def __init__(self):
+    def __init__(self,weight):
         super().__init__()
-        # self.weight1 = nn.parameter(weight[1])
-        # self.weight2 = nn.parameter(weight[2])
-        # self.weight3 = nn.parameter(weight[3])
-        # self.weight4 = nn.parameter(weight[4])
+        self.weight1 = weight[0]
+        self.weight2 = weight[1]
+        self.weight3 = weight[2]
+        self.weight4 = weight[3]
         self.features = nn.Sequential(
             #nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
@@ -48,16 +43,16 @@ class cnn2d_xiao_merge(nn.Module):
 
     def forward(self, x):
         # print(x.shape)
-        x = F.conv2d(x, weight[0], bias=None, stride=1, padding=2, dilation=1, groups=1)
+        x = F.conv2d(x, self.weight1, bias=None, stride=1, padding=2, dilation=1, groups=1)
         x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
         # print(x.shape)
-        x = F.conv2d(x, weight[1], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.conv2d(x, self.weight2, bias=None, stride=1, padding=1, dilation=1, groups=1)
         x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
         # print(x.shape)
-        x = F.conv2d(x, weight[2], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.conv2d(x, self.weight3, bias=None, stride=1, padding=1, dilation=1, groups=1)
         x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
         # print(x.shape)
-        x = F.conv2d(x, weight[3], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.conv2d(x, self.weight4, bias=None, stride=1, padding=1, dilation=1, groups=1)
         x = F.max_pool2d(F.relu(x),kernel_size=2, stride=2)
         # print(x.shape)
         x = x.view(x.size(0), -1)
@@ -65,104 +60,78 @@ class cnn2d_xiao_merge(nn.Module):
         x = self.classifier(x)
         # print(x.shape)
         return x
+def merge_model(PATH):
+    weight = mf.weight()
+    other_weight = mfa.weight(PATH)
+    weight=xiao_feature_enhance.f_e(weight)
+    other_weight=xiao_feature_enhance.f_e(other_weight)
 
+    for i in range(0,len(weight)):  # merge two kernel
+        weight[i].data+=other_weight[i]
 
-##########################################checking########################################################
-import xiao_dataset_random as xdr
+    cifar = xdr.FlameSet('insert_fault', 2304, '2D', 'try')
+    traindata_id, testdata_id = cifar._shuffle()  
+    # create training and validation sampler objects
+    tr_sampler = SubsetRandomSampler(traindata_id) 
+    val_sampler = SubsetRandomSampler(testdata_id)
 
-cifar = xdr.FlameSet('insert_fault', 2304, '2D', 'try')
+    # create iterator objects for train and valid datasets
+    train_batch_size=30
+    trainloader = DataLoader(cifar, batch_size=train_batch_size, sampler=tr_sampler,
+                            shuffle=False) 
+    valid_batch_size=1
+    validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler,
+                            shuffle=False) 
 
-traindata_id, testdata_id = cifar._shuffle()  # xiao：随机生成训练数据集与测试数据集
+    net = cnn2d_xiao_merge(weight)   
+    optimizer = optim.SGD(net.parameters(), lr=0.01, weight_decay=1e-6, momentum=0.9, nesterov=True)
 
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+    loss_function = nn.NLLLoss()  # classify
+    # loss_function = nn.MSELoss()  # fitting
+    train_loss, valid_loss = [], []
+    for epoch in range(200):
+        net.train()
+        for batch_idx, (x, y) in enumerate(trainloader):
+            out = net(x)
+            loss = loss_function(out, y)
+            loss.backward()  
+            optimizer.step()  
+            optimizer.zero_grad()
+            train_loss.append(loss.item())  
+        if loss.item()<0.01:
+            print("break at epoch ",epoch)
+            break
+        if epoch==199:
+            print("it need more than 200 epoch to best fit this situation")
 
-# create training and validation sampler objects
-tr_sampler = SubsetRandomSampler(traindata_id)  # xiao：生成子数据例
-val_sampler = SubsetRandomSampler(testdata_id)
+    index = np.linspace(1, len(train_loss), len(train_loss))  
+    plt.figure()
+    plt.plot(index, train_loss)
+    plt.title("clip size=2304")
+    plt.show()
+    PATH = 'merge_models/net_xiao_merge.pkl'
+    torch.save(net, PATH)
 
-# create iterator objects for train and valid datasets
-# xiao：Dataloader是个迭代器，也是Pytorch的数据接口
-# xiao: 数据批不恰当时会严重影响精准度
-train_batch_size=30
-trainloader = DataLoader(cifar, batch_size=train_batch_size, sampler=tr_sampler,
-                         shuffle=False)  # dataset就是Torch的Dataset格式的对象；batch_size即每批训练的样本数量，默认为；
-valid_batch_size=1
-validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler,
-                         shuffle=False)  # shuffle表示是否需要随机取样本；num_workers表示读取样本的线程数。
-
-
-
-net = cnn2d_xiao_merge()     # 加载训练过的模型
-
-import torch.optim as optim
-
-optimizer = optim.SGD(net.parameters(), lr=0.01, weight_decay=1e-6, momentum=0.9, nesterov=True)
-
-loss_function = nn.NLLLoss()  # classify
-# loss_function = nn.MSELoss()  # fitting
-
-train_loss, valid_loss = [], []
-
-for epoch in range(200):
-    net.train()
-    for batch_idx, (x, y) in enumerate(trainloader):
-
+    total_correct = 0
+    for x, y in trainloader:
         out = net(x)
-        # print(out, y)
-        loss = loss_function(out, y)
+        pred = out.argmax(dim=1)
+        correct = pred.eq(y).sum().float().item()
+        total_correct += correct
 
-        loss.backward()  # 计算倒数
-        optimizer.step()  # w' = w - Ir*grad 模型参数更新
-        optimizer.zero_grad()
+    total_num = len(trainloader) * train_batch_size
+    acc = total_correct / total_num
+    print('train_acc of new model:', acc)
 
-        # if batch_idx % 10 == 0:  # 训练过程，输出并记录损失值
-        #     print(epoch, batch_idx, loss.item())
+    total_correct = 0
+    for x, y in validloader:  
+        out = net(x)
+        pred = out.argmax(dim=1)
+        correct = pred.eq(y).sum().float().item()
+        total_correct += correct
 
-        train_loss.append(loss.item())  # loss仍然有一个图形副本。在这种情况中，可用.item()来释放它.(提高训练速度技巧)
-    if loss.item()<0.01:
-        print("break at epoch ",epoch)
-        break
-    if epoch==199:
-        print("it need more than 200 epoch to best fit this situation")
-
-index = np.linspace(1, len(train_loss), len(train_loss))  # 训练结束，绘制损失值变化图
-plt.figure()
-plt.plot(index, train_loss)
-plt.title("clip size=2304")
-plt.show()
-PATH = 'global_models/source_models/net_xiao_merge.pkl'   # net1为1D卷积神经网络模型，net2为2D卷积神经网络模型
-torch.save(net, PATH)
-
-total_correct = 0
-for x, y in trainloader:  # 训练误差
-    # print(x.shape)
-    out = net(x)
-    # out:[b, 10]
-    pred = out.argmax(dim=1)
-    correct = pred.eq(y).sum().float().item()
-    total_correct += correct
-
-    # loss = loss_function(out, y)
-    # print(loss.item())
-
-# train_batch_size确保得到的精准度真实 （xiao）
-total_num = len(trainloader) * train_batch_size
-acc = total_correct / total_num
-# print(total_correct,total_num)
-print('train_acc', acc)
-
-total_correct = 0
-for x, y in validloader:  # 测试误差
-    out = net(x)
-    # print(out)
-    pred = out.argmax(dim=1)
-    correct = pred.eq(y).sum().float().item()
-    # print(pred,y)
-    total_correct += correct
-
-total_num = len(validloader) * valid_batch_size
-acc = total_correct / total_num
-# print(total_correct,total_num)
-print('test_acc', acc)
-exit(1)
+    total_num = len(validloader) * valid_batch_size
+    acc = total_correct / total_num
+    print('test_acc of new model:', acc)
+    print('The new model has saved!')
+    exit(1)

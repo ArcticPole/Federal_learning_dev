@@ -14,50 +14,12 @@ import tools.xiao_feature_enhance as xiao_feature_enhance
 import tools.xiao_global_feature as xiao_global_feature
 import third_stage.William_model_test as wt
 
-# presentage = wt.data_identification()
-# presentage.pop(4)
-# presentage.pop(8)
-# print(presentage)
-# net_list=['global_models/source_models/net_xiao_L_fault_all_ready.pkl',
-#           'global_models/source_models/net_xiao_L_fault_foreign_body.pkl',
-#           'global_models/source_models/net_xiao_L_fault_incline.pkl',
-#           'global_models/source_models/net_xiao_L_fault_no_base.pkl',
-#           'global_models/source_models/net_xiao_insert_fault_all_ready.pkl',
-#           'global_models/source_models/net_xiao_insert_fault_foreign_body.pkl',
-#           'global_models/source_models/net_xiao_insert_fault_incline.pkl',
-#           'global_models/source_models/net_xiao_insert_fault_no_base.pkl',
-#           ]
-
-# net_list = ['global_models/source_models/net_xiao_L_fault_classify.pkl',
-#            'global_models/source_models/net_xiao_insert_fault_classify.pkl']
-# presentage=[presentage[0],
-#             presentage[1]]
-# nl = len(net_list)
-# all_weights = xiao_global_feature.catch_feature(net_list, nl)
-# for i in range(len(presentage)):
-#     if presentage[i] > 0.1:
-#         print(presentage[i])
-#         # all_weights[i] = xiao_feature_enhance.f_e(all_weights[i])
-#         for j in range(len(all_weights[i])):
-#             all_weights[i][j].data*=presentage[i]
-#     else:
-#         for j in range(len(all_weights[i])):
-#             all_weights[i][j].data *= 0
-#
-# weight=all_weights[0]
-#
-# for i in range(1,nl):
-#     for j in range(len(weight)):
-#         weight[j].data += all_weights[i][j]
-# for i in range(len(weight)):
-#     weight[i].data /= pow(nl, 2)
-
 
 class cnn2d_xiao_individual(nn.Module):
 
-    def __init__(self):
+    def __init__(self, data):
         super(cnn2d_xiao_individual, self).__init__()
-        presentage, pre = wt.data_identification()
+        presentage, pre = wt.data_identification(data)
         net_list = ["../global_models/source_models/net_xiao_L_fault_classify.pkl",
                     "../global_models/source_models/net_xiao_insert_fault_classify.pkl"]
         print(pre)
@@ -119,103 +81,106 @@ class cnn2d_xiao_individual(nn.Module):
 
 
 ##########################################checking########################################################
-# import xiao_dataset_random as xdr
-# cifar = xdr.FlameSet('global', 2304, '2D', 'global')
-import third_stage.William_dataset_random as wdr
-cifar = wdr.FlameSet_test('all', 2304, '2D', 'classify')
-traindata_id, testdata_id = cifar._shuffle()  # xiao：Randomly generate training data set and test data set
+def checking(PATH_data):
+    # import xiao_dataset_random as xdr
+    # cifar = xdr.FlameSet('global', 2304, '2D', 'global')
+    import third_stage.William_dataset_random as wdr
+    cifar = wdr.FlameSet_test('all', 2304, '2D', 'classify')
+    traindata_id, testdata_id = cifar._shuffle()  # xiao：Randomly generate training data set and test data set
 
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+    from torch.utils.data import DataLoader
+    from torch.utils.data.sampler import SubsetRandomSampler
 
-# create training and validation sampler objects
-tr_sampler = SubsetRandomSampler(traindata_id)
-val_sampler = SubsetRandomSampler(testdata_id)
+    # create training and validation sampler objects
+    tr_sampler = SubsetRandomSampler(traindata_id)
+    val_sampler = SubsetRandomSampler(testdata_id)
 
-# create iterator objects for train and valid datasets
-# xiao：Dataloader is an iterator and the data interface of pytorch
-# xiao: Improper data batch will seriously affect the accuracy
-train_batch_size=30
-trainloader = DataLoader(cifar, batch_size=train_batch_size, sampler=tr_sampler,
-                         shuffle=False)
-# Dataset is an object in the dataset format of torch; batch_ Size is the number of samples in each batch of training.
-valid_batch_size=1
-validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler,
-                         shuffle=False)
-# Shuffle indicates whether it is necessary to take samples at random;
-# num_ Workers indicates the number of threads reading samples.
+    # create iterator objects for train and valid datasets
+    # xiao：Dataloader is an iterator and the data interface of pytorch
+    # xiao: Improper data batch will seriously affect the accuracy
+    train_batch_size=30
+    trainloader = DataLoader(cifar, batch_size=train_batch_size, sampler=tr_sampler,
+                             shuffle=False)
+    # Dataset is an object in the dataset format of torch; batch_ Size is the number of samples in each batch of training.
+    valid_batch_size=1
+    validloader = DataLoader(cifar, batch_size=valid_batch_size, sampler=val_sampler,
+                             shuffle=False)
+    # Shuffle indicates whether it is necessary to take samples at random;
+    # num_ Workers indicates the number of threads reading samples.
 
-import tools.model as model
-net = model.cnn2d_xiao_individual()
+    import tools.model as model
 
-from torch import optim
+    net = model.cnn2d_xiao_individual(PATH_data)
+    # Instantiate the class before use
 
-optimizer = optim.SGD(net.parameters(), lr=0.01, weight_decay=1e-6, momentum=0.9, nesterov=True)
+    from torch import optim
 
-loss_function = nn.NLLLoss()  # classify
-# loss_function = nn.MSELoss()  # fitting
+    optimizer = optim.SGD(net.parameters(), lr=0.01, weight_decay=1e-6, momentum=0.9, nesterov=True)
 
-train_loss, valid_loss = [], []
+    loss_function = nn.NLLLoss()  # classify
+    # loss_function = nn.MSELoss()  # fitting
 
-for epoch in range(200):
-    net.train()
-    for batch_idx, (x, y) in enumerate(trainloader):
+    train_loss, valid_loss = [], []
 
+    for epoch in range(200):
+        net.train()
+        for batch_idx, (x, y) in enumerate(trainloader):
+
+            out = net(x)
+            loss = loss_function(out, y)
+
+            loss.backward()  # Count down
+            optimizer.step()  # w' = w - Ir*grad--Model parameter update
+            optimizer.zero_grad()
+
+            if batch_idx % 10 == 0:  # In the training process, output and record the loss value
+                print(epoch, batch_idx, loss.item())
+
+            train_loss.append(loss.item())
+        if loss.item()<0.0001:
+            print("break at epoch ",epoch)
+            break
+        # if epoch == 999:
+        #     print("it need more than 1000 epoch to best fit this situation")
+        # use for stop training ahead
+
+    index = np.linspace(1, len(train_loss), len(train_loss))  # After the training, draw the loss value change diagram
+    plt.figure()
+    plt.plot(index, train_loss)
+    plt.show()
+    PATH_model = '../global_models/net_xiao_global_indi.pkl'
+    torch.save(net, PATH_model)
+    weight = [net.weight1, net.weight2, net.weight3, net.weight4]
+    PATH2 = '../global_models/net_xiao_global_indi_state.pkl'
+    state = {'model': net.state_dict(), 'optimizer': optimizer.state_dict(), 'epoch': epoch, 'weight': weight}
+    torch.save(state, PATH2)
+
+    total_correct = 0
+    for x, y in trainloader:  # train error
         out = net(x)
-        # print(out, y)
-        loss = loss_function(out, y)
+        pred = out.argmax(dim=1)
+        correct = pred.eq(y).sum().float().item()
+        total_correct += correct
 
-        loss.backward()  # Count down
-        optimizer.step()  # w' = w - Ir*grad--Model parameter update
-        optimizer.zero_grad()
+    # train_batch_size make sure accuracy is correct （xiao）
+    total_num = len(trainloader) * train_batch_size
+    acc = total_correct / total_num
+    print('train_acc', acc)
 
-        if batch_idx % 10 == 0:  # In the training process, output and record the loss value
-            print(epoch, batch_idx, loss.item())
+    total_correct = 0
+    for x, y in validloader:  # test error
+        out = net(x)
+        pred = out.argmax(dim=1)
+        correct = pred.eq(y).sum().float().item()
+        total_correct += correct
 
-        train_loss.append(loss.item())
-    if loss.item()<0.0001:
-        print("break at epoch ",epoch)
-        break
-    # if epoch == 999:
-    #     print("it need more than 1000 epoch to best fit this situation")
-    # use for stop training ahead
+    total_num = len(validloader) * valid_batch_size
+    acc = total_correct / total_num
+    print('test_acc', acc)
+    return PATH_model
 
-index = np.linspace(1, len(train_loss), len(train_loss))  # After the training, draw the loss value change diagram
-plt.figure()
-plt.plot(index, train_loss)
-plt.show()
-PATH = '../global_models/net_xiao_global_indi.pkl'
-torch.save(net, PATH)
-weight = [net.weight1, net.weight2, net.weight3, net.weight4]
-PATH2 = '../global_models/net_xiao_global_indi_state.pkl'
-state = {'model': net.state_dict(), 'optimizer': optimizer.state_dict(), 'epoch': epoch, 'weight': weight}
-torch.save(state, PATH2)
-
-total_correct = 0
-for x, y in trainloader:  # train error
-    out = net(x)
-    pred = out.argmax(dim=1)
-    correct = pred.eq(y).sum().float().item()
-    total_correct += correct
-
-# train_batch_size make sure accuracy is correct （xiao）
-total_num = len(trainloader) * train_batch_size
-acc = total_correct / total_num
-print('train_acc', acc)
-
-total_correct = 0
-for x, y in validloader:  # test error
-    out = net(x)
-    pred = out.argmax(dim=1)
-    correct = pred.eq(y).sum().float().item()
-    total_correct += correct
-
-total_num = len(validloader) * valid_batch_size
-acc = total_correct / total_num
-print('test_acc', acc)
-
-conv_layers = []
-model_weights = []
-model_children = list(net.children())
-exit(1)
-
+'''
+import third_stage.William_model_test as wmt
+cifar, testdata_id = wmt.create_data()
+checking(cifar, testdata_id)
+'''

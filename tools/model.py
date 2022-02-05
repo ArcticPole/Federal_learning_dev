@@ -308,9 +308,9 @@ class cnn2d_xiao_global(nn.Module):
 
 class cnn2d_xiao_individual(nn.Module):
 
-    def __init__(self):
+    def __init__(self, PATH_data):
         super(cnn2d_xiao_individual, self).__init__()
-        presentage,pre = wt.data_identification()
+        presentage, pre = wt.data_identification(PATH_data)
         net_list = ['../global_models/source_models/net_xiao_L_fault_classify.pkl',
                     '../global_models/source_models/net_xiao_insert_fault_classify.pkl']
         print(pre)
@@ -368,4 +368,42 @@ class cnn2d_xiao_individual(nn.Module):
         # print(x.shape)
         x = self.classifier(x)
         # print(x.shape)
+        return x
+
+class cnn2d_hy_merge_para(nn.Module):
+    def __init__(self):
+        super().__init__()
+        log_para = '../global_models/net_xiao_global_para_hy_2.pkl'
+        import torch
+        checkpoint = torch.load(log_para)
+        weight = checkpoint['weight']
+        self.features = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(2304, 288),
+            nn.ReLU(inplace=True),
+            nn.Linear(288, 72),
+            nn.ReLU(inplace=True),
+            nn.Linear(72, 10),
+            nn.LogSoftmax(dim=1)
+        )
+        self.weight1 = weight[0]
+        self.weight2 = weight[1]
+        self.weight3 = weight[2]
+        self.weight4 = weight[3]
+
+    def forward(self, x):
+        x = F.conv2d(x, weight[0], bias=None, stride=1, padding=2, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        x = F.conv2d(x, weight[1], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        x = F.conv2d(x, weight[2], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        x = F.conv2d(x, weight[3], bias=None, stride=1, padding=1, dilation=1, groups=1)
+        x = F.max_pool2d(F.relu(x), kernel_size=2, stride=2)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
         return x
