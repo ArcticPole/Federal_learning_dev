@@ -28,5 +28,13 @@ def catch_feature(netlist,n):
                         counter += 1
                         model_weights.append(model_children[i][j].weight)
                         conv_layers.append(model_children[i][j])
-            weight_list.append(model_weights)
+        weight_list.append(model_weights)
+    return weight_list
+
+
+def catch_feature_modify(netlist,n):
+    weight_list=[]
+    for k in range(n):
+        net = torch.load(netlist[k])
+        weight_list.append([net.weight1,net.weight2,net.weight3,net.weight4])
     return weight_list

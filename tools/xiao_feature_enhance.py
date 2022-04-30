@@ -13,8 +13,19 @@ def f_e(weight):
     for i in range(0, len(weight)):  # len=4
         for j in range(0, len(weight[i])):  # i=0,len=32
             for k in range(0, len(weight[i][j])):  # i=0,j=0,len=1
-                weight_max = max(max((weight[i][j][k]).detach().numpy().tolist()))
-                weight_min = min(min((weight[i][j][k]).detach().numpy().tolist()))
+                temp_max=0
+                temp_min=0
+                for m in range(0, len(weight[i][j][k])):
+                    am = np.argmax((weight[i][j][k][m]).detach().numpy())
+                    bm = np.argmin((weight[i][j][k][m]).detach().numpy())
+                    temp_a = (weight[i][j][k][m][am]).detach().numpy()
+                    if temp_a>temp_max:
+                        temp_max = temp_a
+                    temp_b = (weight[i][j][k][m][bm]).detach().numpy()
+                    if temp_b < temp_min:
+                        temp_min = temp_b
+                weight_max=temp_max
+                weight_min=temp_min
                 ran = weight_max - weight_min
                 weight_med = weight_min + ran * 0.5
                 critical_max = weight_med + ran * 0.4

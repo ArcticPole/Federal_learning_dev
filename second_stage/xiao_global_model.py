@@ -49,7 +49,7 @@ for i in range(len(weight)):
 
 # ---------------------------------------------training-----------------------------------------------------
 
-import xiao_dataset_random as xdr
+import tools.xiao_dataset_random as xdr
 
 # Generate train and test datasets randomly
 cifar = xdr.FlameSet('global', 2304, '2D', 'global')
